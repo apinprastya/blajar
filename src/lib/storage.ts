@@ -14,7 +14,8 @@ export interface Progress {
   ttsEngine: 'instant' | 'ai';
 }
 
-const KEY = 'elajar.progress.v1';
+const KEY = 'blajar.progress.v1';
+const LEGACY_KEY = 'elajar.progress.v1';
 
 const DEFAULT_PROGRESS: Progress = {
   xp: 0,
@@ -29,7 +30,7 @@ const DEFAULT_PROGRESS: Progress = {
 
 function load(): Progress {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return { ...DEFAULT_PROGRESS };
     return { ...DEFAULT_PROGRESS, ...(JSON.parse(raw) as Partial<Progress>) };
   } catch {

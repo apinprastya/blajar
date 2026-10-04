@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 function ortAssets(): Plugin {
   return {
-    name: 'elajar:ort-assets',
+    name: 'blajar:ort-assets',
     configureServer(server) {
       const publicDir = path.resolve(server.config.publicDir);
       server.middlewares.use((request, response, next) => {
@@ -42,8 +42,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'fonts/*.woff2'],
       manifest: {
-        name: 'eLajar — Belajar Seru',
-        short_name: 'eLajar',
+        name: 'Blajar — Belajar Seru',
+        short_name: 'Blajar',
         description: 'Belajar Matematika dan Bahasa Inggris dengan seru!',
         lang: 'id',
         start_url: './',

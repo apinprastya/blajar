@@ -22,7 +22,7 @@ function slugify(text) {
 }
 
 async function collectPhrases() {
-  const outfile = path.join(tmpdir(), `elajar-english-${Date.now()}.mjs`);
+  const outfile = path.join(tmpdir(), `blajar-english-${Date.now()}.mjs`);
   await build({
     entryPoints: [path.join(root, 'src/content/english.ts')],
     bundle: true,

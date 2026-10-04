@@ -91,7 +91,7 @@ export function HomeScreen({ onMath, onEnglish }: Props) {
 
       <header className="relative z-10 px-6 pt-10 text-center">
         <div className="animate-wiggle text-6xl">🦉</div>
-        <h1 className="mt-1 text-4xl font-bold tracking-tight text-brand-700">eLajar</h1>
+        <h1 className="mt-1 text-4xl font-bold tracking-tight text-brand-700">Blajar</h1>
         <p className="mt-1 text-ink/60">Belajar dengan seru setiap hari!</p>
       </header>
 
