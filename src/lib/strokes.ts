@@ -5,6 +5,8 @@ export interface StrokePoint {
 
 export const INK_COLOR = '#2D3436';
 
+export const STROKE_RATIO = 0.03;
+
 export function paintStrokes(
   context: CanvasRenderingContext2D,
   strokes: StrokePoint[][],
@@ -14,7 +16,7 @@ export function paintStrokes(
   context.fillStyle = INK_COLOR;
   context.lineCap = 'round';
   context.lineJoin = 'round';
-  context.lineWidth = 4;//Math.max(4, canvasSize * 0.045);
+  context.lineWidth = Math.max(3, canvasSize * STROKE_RATIO);
   for (const stroke of strokes) {
     if (stroke.length === 0) continue;
     if (stroke.length === 1) {

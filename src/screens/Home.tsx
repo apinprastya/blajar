@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { StarIcon } from '../components/StarRow';
 import { preloadModel } from '../lib/handwriting';
 import { playTap } from '../lib/sfx';
-import { toggleSound, toggleTts, useProgress } from '../lib/storage';
+import { setVoiceEngine, toggleSound, toggleTts, useProgress } from '../lib/storage';
 import { cx } from '../lib/utils';
 
 interface Props {
@@ -67,6 +67,19 @@ export function HomeScreen({ onMath, onEnglish }: Props) {
     }
   };
 
+  const handleVoiceEngine = () => {
+    playTap();
+    if (progress.ttsEngine === 'ai') {
+      setVoiceEngine('instant');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Aktifkan Suara AI?\n\nModel suara (±90 MB) diunduh sekali saat pertama dipakai, lalu tersimpan di perangkat. Kalau belum selesai diunduh, aplikasi memakai suara instan.',
+    );
+    if (!confirmed) return;
+    setVoiceEngine('ai');
+  };
+
   const iconButton =
     'flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl shadow-md transition active:scale-95';
 
@@ -99,7 +112,7 @@ export function HomeScreen({ onMath, onEnglish }: Props) {
         />
       </main>
 
-      <footer className="relative z-10 mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-5 pb-6">
+      <footer className="relative z-10 mx-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 px-5 pb-6">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold shadow-md">
             🔥 {progress.streakCount}
@@ -124,6 +137,15 @@ export function HomeScreen({ onMath, onEnglish }: Props) {
             aria-label={progress.tts ? 'Matikan pengucapan' : 'Nyalakan pengucapan'}
           >
             🗣️
+          </button>
+          <button
+            type="button"
+            className={cx(iconButton, progress.ttsEngine !== 'ai' && 'opacity-50 grayscale')}
+            onClick={handleVoiceEngine}
+            aria-label={progress.ttsEngine === 'ai' ? 'Matikan Suara AI' : 'Aktifkan Suara AI'}
+            title="Suara AI (self-hosted, unduh sekali)"
+          >
+            ✨
           </button>
           {supportsFullscreen ? (
             <button
