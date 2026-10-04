@@ -1,4 +1,5 @@
 import { loadMnistModel, predict, type MnistManifest, type MnistModel } from './mnist';
+import { predictWithWasm, preloadWasmModel } from './mnistWasm';
 import { paintStrokes, type StrokePoint } from './strokes';
 
 export interface DigitRecognition {
@@ -36,6 +37,7 @@ export function preloadModel(): void {
   void getModel().catch(() => {
     /* fallback: keypad */
   });
+  preloadWasmModel();
 }
 
 export function isModelReady(): boolean {
@@ -135,7 +137,7 @@ export async function recognizeDigit(canvas: HTMLCanvasElement): Promise<DigitRe
   const input = canvasToMnistInput(canvas);
   if (!input) return null;
   const model = await getModel();
-  const probs = predict(model, input);
+  const probs = (await predictWithWasm(model, input)) ?? predict(model, input);
   let digit = 0;
   for (let i = 1; i < 10; i++) {
     if (probs[i] > probs[digit]) digit = i;

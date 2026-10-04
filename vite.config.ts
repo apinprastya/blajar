@@ -60,7 +60,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,woff2,png,svg,json,bin,mp3}'],
+        globPatterns: ['**/*.{js,css,html,woff2,png,svg,json,bin,mp3,wasm}'],
+        globIgnores: ['ort/**', 'assets/ort-*'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         runtimeCaching: [
           {

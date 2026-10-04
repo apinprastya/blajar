@@ -13,6 +13,7 @@ export interface MnistModel {
   dense1B: Float32Array;
   dense2K: Float32Array;
   dense2B: Float32Array;
+  all: Float32Array;
 }
 
 const S = 28;
@@ -41,6 +42,7 @@ export function loadMnistModel(manifest: MnistManifest, buffer: ArrayBuffer): Mn
     dense1B: take('dense_Dense1/bias'),
     dense2K: take('dense_Dense2/kernel'),
     dense2B: take('dense_Dense2/bias'),
+    all: floats,
   };
   return model;
 }
