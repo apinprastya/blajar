@@ -1,6 +1,6 @@
 import { loadMnistModel, predict, type MnistManifest, type MnistModel } from './mnist';
 import { predictWithWasm, preloadWasmModel } from './mnistWasm';
-import { paintStrokes, type StrokePoint } from './strokes';
+import type { StrokePoint } from './strokes';
 
 export interface DigitRecognition {
   digit: number;
@@ -74,6 +74,84 @@ function centerByMass(values: Float32Array): Float32Array {
   return out;
 }
 
+export function strokesToMnistInput(
+  strokes: StrokePoint[][],
+  sourceWidth: number,
+  sourceHeight: number,
+): Float32Array | null {
+  if (strokes.length === 0) return null;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let totalPoints = 0;
+  for (const stroke of strokes) {
+    for (const point of stroke) {
+      if (point.x < minX) minX = point.x;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.y > maxY) maxY = point.y;
+      totalPoints++;
+    }
+  }
+  if (!isFinite(minX) || totalPoints === 0) return null;
+
+  const boxWidth = maxX - minX;
+  const boxHeight = maxY - minY;
+  const canvasSize = Math.min(sourceWidth, sourceHeight);
+  if (boxWidth < canvasSize * 0.01 && boxHeight < canvasSize * 0.01 && totalPoints < 2) return null;
+
+  const small = document.createElement('canvas');
+  small.width = 28;
+  small.height = 28;
+  const smallContext = small.getContext('2d');
+  if (!smallContext) return null;
+  smallContext.fillStyle = '#000';
+  smallContext.fillRect(0, 0, 28, 28);
+
+  const padding = 4;
+  const maxBox = Math.max(boxWidth, boxHeight) || 1;
+  const scale = (28 - 2 * padding) / maxBox;
+  const drawWidth = boxWidth * scale;
+  const drawHeight = boxHeight * scale;
+  const offsetX = (28 - drawWidth) / 2;
+  const offsetY = (28 - drawHeight) / 2;
+
+  smallContext.strokeStyle = '#fff';
+  smallContext.fillStyle = '#fff';
+  smallContext.lineCap = 'round';
+  smallContext.lineJoin = 'round';
+  smallContext.lineWidth = Math.max(1.8, Math.min(3.5, 18 * scale));
+
+  for (const stroke of strokes) {
+    if (stroke.length === 0) continue;
+    if (stroke.length === 1) {
+      const x = offsetX + (stroke[0].x - minX) * scale;
+      const y = offsetY + (stroke[0].y - minY) * scale;
+      smallContext.beginPath();
+      smallContext.arc(x, y, smallContext.lineWidth / 2, 0, Math.PI * 2);
+      smallContext.fill();
+      continue;
+    }
+    smallContext.beginPath();
+    stroke.forEach((point, index) => {
+      const x = offsetX + (point.x - minX) * scale;
+      const y = offsetY + (point.y - minY) * scale;
+      if (index === 0) smallContext.moveTo(x, y);
+      else smallContext.lineTo(x, y);
+    });
+    smallContext.stroke();
+  }
+
+  const smallData = smallContext.getImageData(0, 0, 28, 28).data;
+  const values = new Float32Array(784);
+  for (let i = 0; i < 784; i++) {
+    values[i] = smallData[i * 4] / 255;
+  }
+  return centerByMass(values);
+}
+
 export function canvasToMnistInput(canvas: HTMLCanvasElement): Float32Array | null {
   const context = canvas.getContext('2d');
   if (!context) return null;
@@ -97,20 +175,24 @@ export function canvasToMnistInput(canvas: HTMLCanvasElement): Float32Array | nu
       }
     }
   }
-  if (maxX < 0 || inkPixels < 25) return null;
+  if (maxX < 0 || inkPixels < 15) return null;
 
   const boxWidth = maxX - minX + 1;
   const boxHeight = maxY - minY + 1;
-  if (boxWidth < width * 0.03 && boxHeight < height * 0.03) return null;
+  if (boxWidth < width * 0.02 && boxHeight < height * 0.02) return null;
 
   const small = document.createElement('canvas');
   small.width = 28;
   small.height = 28;
   const smallContext = small.getContext('2d');
   if (!smallContext) return null;
+  smallContext.fillStyle = '#000';
+  smallContext.fillRect(0, 0, 28, 28);
   smallContext.imageSmoothingEnabled = true;
   smallContext.imageSmoothingQuality = 'high';
-  const scale = 20 / Math.max(boxWidth, boxHeight);
+
+  const padding = 4;
+  const scale = Math.min((28 - 2 * padding) / boxWidth, (28 - 2 * padding) / boxHeight);
   const drawWidth = boxWidth * scale;
   const drawHeight = boxHeight * scale;
   smallContext.drawImage(
@@ -128,7 +210,7 @@ export function canvasToMnistInput(canvas: HTMLCanvasElement): Float32Array | nu
   const smallData = smallContext.getImageData(0, 0, 28, 28).data;
   const values = new Float32Array(784);
   for (let i = 0; i < 784; i++) {
-    values[i] = smallData[i * 4 + 3] / 255;
+    values[i] = smallData[i * 4] / 255;
   }
   return centerByMass(values);
 }
@@ -172,7 +254,7 @@ export function segmentStrokes(
   });
 
   const order = strokes.map((_, index) => index).sort((a, b) => boxes[a].minX - boxes[b].minX);
-  const gapThreshold = canvasWidth * 0.12;
+  const gapThreshold = Math.max(canvasWidth * 0.08, 30);
   const clusters: number[][] = [];
   let current: number[] = [];
   let currentMaxX = -Infinity;
@@ -214,19 +296,28 @@ export async function recognizeStrokes(
 ): Promise<DigitRecognition[] | null> {
   const clusters = segmentStrokes(strokes, source.width);
   if (clusters.length === 0) return null;
-  const minLength = Math.min(source.width, source.height) * 0.08;
+  const minLength = Math.min(source.width, source.height) * 0.05;
   const results: DigitRecognition[] = [];
   for (const cluster of clusters) {
     if (clusterLength(cluster) < minLength) continue;
-    const scratch = document.createElement('canvas');
-    scratch.width = source.width;
-    scratch.height = source.height;
-    const context = scratch.getContext('2d');
-    if (!context) return null;
-    paintStrokes(context, cluster, Math.min(source.width, source.height));
-    const recognition = await recognizeDigit(scratch);
-    if (!recognition) return null;
-    results.push(recognition);
+    const input = strokesToMnistInput(cluster, source.width, source.height);
+    if (!input) continue;
+    const model = await getModel();
+    const probs = (await predictWithWasm(model, input)) ?? predict(model, input);
+    let digit = 0;
+    for (let i = 1; i < 10; i++) {
+      if (probs[i] > probs[digit]) digit = i;
+    }
+    let second = digit === 0 ? 1 : 0;
+    for (let i = 0; i < 10; i++) {
+      if (i !== digit && probs[i] > probs[second]) second = i;
+    }
+    results.push({
+      digit,
+      confidence: probs[digit],
+      margin: probs[digit] - probs[second],
+      probs,
+    });
   }
   return results.length > 0 ? results : null;
 }

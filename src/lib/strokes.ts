@@ -11,12 +11,13 @@ export function paintStrokes(
   context: CanvasRenderingContext2D,
   strokes: StrokePoint[][],
   canvasSize: number,
+  strokeWidth?: number,
 ): void {
   context.strokeStyle = INK_COLOR;
   context.fillStyle = INK_COLOR;
   context.lineCap = 'round';
   context.lineJoin = 'round';
-  context.lineWidth = Math.max(3, canvasSize * STROKE_RATIO);
+  context.lineWidth = strokeWidth ?? Math.max(2, canvasSize * STROKE_RATIO);
   for (const stroke of strokes) {
     if (stroke.length === 0) continue;
     if (stroke.length === 1) {
