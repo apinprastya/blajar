@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { setSfxEnabled } from './sfx';
-import { setTtsEnabled, setTtsEngine } from './tts';
+import { setTtsEnabled } from './tts';
 import type { SessionStats } from './types';
 
 export interface Progress {
@@ -11,7 +11,6 @@ export interface Progress {
   totalCorrect: number;
   sound: boolean;
   tts: boolean;
-  ttsEngine: 'instant' | 'ai';
 }
 
 const KEY = 'blajar.progress.v1';
@@ -25,7 +24,6 @@ const DEFAULT_PROGRESS: Progress = {
   totalCorrect: 0,
   sound: true,
   tts: true,
-  ttsEngine: 'instant',
 };
 
 function load(): Progress {
@@ -43,7 +41,6 @@ const listeners = new Set<() => void>();
 
 setSfxEnabled(state.sound);
 setTtsEnabled(state.tts);
-setTtsEngine(state.ttsEngine);
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -58,7 +55,6 @@ export function updateProgress(updater: (progress: Progress) => Progress) {
   state = updater(state);
   setSfxEnabled(state.sound);
   setTtsEnabled(state.tts);
-  setTtsEngine(state.ttsEngine);
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
@@ -127,8 +123,4 @@ export function toggleSound(): void {
 
 export function toggleTts(): void {
   updateProgress((progress) => ({ ...progress, tts: !progress.tts }));
-}
-
-export function setVoiceEngine(engine: 'instant' | 'ai'): void {
-  updateProgress((progress) => ({ ...progress, ttsEngine: engine }));
 }

@@ -1,42 +1,9 @@
-import { createReadStream, existsSync } from 'node:fs';
-import path from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-function ortAssets(): Plugin {
-  return {
-    name: 'blajar:ort-assets',
-    configureServer(server) {
-      const publicDir = path.resolve(server.config.publicDir);
-      server.middlewares.use((request, response, next) => {
-        const url = (request.url ?? '').split('?')[0];
-        if (!url.startsWith('/ort/')) {
-          next();
-          return;
-        }
-        const filePath = path.resolve(path.join(publicDir, url));
-        if (!filePath.startsWith(publicDir + path.sep) || !existsSync(filePath)) {
-          next();
-          return;
-        }
-        response.setHeader(
-          'Content-Type',
-          filePath.endsWith('.wasm') ? 'application/wasm' : 'text/javascript',
-        );
-        response.setHeader('Cache-Control', 'no-cache');
-        createReadStream(filePath).pipe(response);
-      });
-    },
-  };
-}
-
 export default defineConfig({
-  optimizeDeps: {
-    exclude: ['@huggingface/transformers', 'kokoro-js'],
-  },
   plugins: [
-    ortAssets(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -61,18 +28,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,png,svg,json,bin,mp3,wasm}'],
-        globIgnores: ['ort/**', 'assets/ort-*'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /\/ort\/.*\.(wasm|mjs)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'ort-wasm',
-              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
       },
     }),
   ],

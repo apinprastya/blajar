@@ -1,10 +1,8 @@
 import audioManifest from '../content/audio-manifest.json';
-import { getKokoroBlob, getKokoroState, preloadKokoro, synthKokoro } from './kokoro';
 
 const manifest = audioManifest as Record<string, string>;
 
 let enabled = true;
-let engine: 'instant' | 'ai' = 'instant';
 let currentAudio: HTMLAudioElement | null = null;
 let cachedVoice: SpeechSynthesisVoice | null = null;
 const preloadCache = new Map<string, HTMLAudioElement>();
@@ -12,13 +10,6 @@ const preloadCache = new Map<string, HTMLAudioElement>();
 export function setTtsEnabled(value: boolean) {
   enabled = value;
   if (!value) stopSpeaking();
-}
-
-export function setTtsEngine(value: 'instant' | 'ai') {
-  if (engine === value) return;
-  engine = value;
-  stopSpeaking();
-  if (value === 'ai') void preloadKokoro().catch(() => {});
 }
 
 function slugify(text: string): string {
@@ -39,64 +30,21 @@ export function speechUrl(text: string): string | null {
 
 export function preloadSpeech(text: string) {
   if (typeof window === 'undefined') return;
-  if (engine === 'ai') {
-    void preloadKokoro().catch(() => {});
-    return;
-  }
   const url = speechUrl(text);
   if (!url || preloadCache.has(text)) return;
   const audio = new Audio(url);
   audio.preload = 'auto';
   audio.load();
   preloadCache.set(text, audio);
-  if (preloadCache.size > 10) {
+  if (preloadCache.size > 40) {
     const oldest = preloadCache.keys().next().value;
     if (oldest !== undefined) preloadCache.delete(oldest);
-  }
-}
-
-function playBlob(blob: Blob) {
-  if (!enabled) return;
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  currentAudio = audio;
-  const cleanup = () => {
-    if (currentAudio === audio) currentAudio = null;
-    URL.revokeObjectURL(url);
-  };
-  audio.onended = cleanup;
-  audio.onerror = cleanup;
-  void audio.play().catch(cleanup);
-}
-
-async function synthAndPlay(text: string) {
-  try {
-    const blob = await synthKokoro(text);
-    if (engine !== 'ai') return;
-    playBlob(blob);
-  } catch {
-    if (engine !== 'ai') return;
-    speakInstant(text);
   }
 }
 
 export function speak(text: string) {
   if (!enabled || typeof window === 'undefined') return;
   stopSpeaking();
-  if (engine === 'ai') {
-    const cached = getKokoroBlob(text);
-    if (cached) {
-      playBlob(cached);
-      return;
-    }
-    if (getKokoroState().status === 'ready') {
-      void synthAndPlay(text);
-      return;
-    }
-    void preloadKokoro().catch(() => {});
-    speakInstant(text);
-    return;
-  }
   speakInstant(text);
 }
 

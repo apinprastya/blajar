@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AiVoiceToast } from './components/AiVoiceToast';
 import { ENGLISH_MODES } from './content/english';
 import { preloadModel } from './lib/handwriting';
-import { preloadKokoro } from './lib/kokoro';
 import { LEVEL_NAMES } from './lib/math';
-import { useProgress } from './lib/storage';
 import type { EnglishMode, MathOp, SessionResult } from './lib/types';
 import { EnglishSetupScreen } from './screens/EnglishSetup';
 import { HomeScreen } from './screens/Home';
@@ -38,14 +35,9 @@ function quizTitle(route: QuizRoute): string {
 export default function App() {
   const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
   const route = stack[stack.length - 1];
-  const progress = useProgress();
 
   useEffect(() => {
     preloadModel();
-  }, []);
-
-  useEffect(() => {
-    if (progress.ttsEngine === 'ai') void preloadKokoro().catch(() => {});
   }, []);
 
   const push = useCallback((next: Route) => setStack((current) => [...current, next]), []);
@@ -127,7 +119,6 @@ export default function App() {
   return (
     <>
       {renderRoute()}
-      <AiVoiceToast />
     </>
   );
 }
