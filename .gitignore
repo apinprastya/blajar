@@ -7,3 +7,7 @@ public/ort
 
 # Local Netlify folder
 .netlify
+
+# Handwriting model training cache
+scripts/.cache
+__pycache__/

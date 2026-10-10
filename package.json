@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "build:wasm": "asc wasm/mnist.ts -O3 --runtime stub --outFile public/models/mnist.wasm",
     "generate:audio": "node scripts/generate-audio.mjs",
-    "validate:content": "node scripts/validate-content.mjs"
+    "validate:content": "node scripts/validate-content.mjs",
+    "eval:model": "node scripts/eval-model.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

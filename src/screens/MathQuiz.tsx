@@ -10,7 +10,7 @@ import { finishSession } from '../lib/storage';
 import type { MathOp, SessionResult, SessionStats } from '../lib/types';
 import { cx } from '../lib/utils';
 
-const AUTO_READ_DELAY = 650;
+const AUTO_READ_DELAY = 400;
 const MIN_FOR_STARS = 10;
 
 type Phase = 'answering' | 'checking' | 'correct' | 'retry' | 'reveal';
@@ -141,7 +141,7 @@ export function MathQuizScreen({ op, level, onExit, onFinish }: Props) {
     try {
       const results = await recognizeStrokes(canvas, strokes);
       if (!results || results.length === 0) return;
-      const unsure = results.some((result) => result.confidence < 0.5 || result.margin < 0.1);
+      const unsure = results.some((result) => result.confidence < 0.4 || result.margin < 0.06);
       if (unsure) {
         playWrong();
         setShake(true);
